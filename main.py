@@ -51,7 +51,7 @@ x = 0
 
 # Load nice silkscreen font
 font = ImageFont.truetype('/home/pi/slkscr.ttf', 8)
-
+font2 = ImageFont.truetype('/home/pi/slkscr.ttf', 24)
 
 
 print("""
@@ -126,13 +126,14 @@ while True:
 		global pressId
 		loopId = pressId
 		for i in range(0,numSecs):
+			draw.rectangle((0, 0, width, height), outline=0, fill=0)
 			disp.fill(0)
 			disp.show()
 			if ( loopId != pressId):
 				print ("Ending loop with ID: " + str(loopId))
 				return
 			print ("Pi-Hole disabled for " + str(numSecs-i))
-			draw.text((x, top + 24), "Pi-Hole disabled for " + str(numSecs-i), font=font, fill=255)
+			draw.text((x, top), "Pi-Hole disabled for " + str(numSecs-i), font=font2, fill=255)
 			disp.image(image)
 			disp.show()
 			buttonshim.set_pixel(255,255,0)

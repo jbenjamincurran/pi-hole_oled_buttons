@@ -53,159 +53,172 @@ x = 0
 font = ImageFont.truetype('/home/pi/slkscr.ttf', 8)
 font2 = ImageFont.truetype('/home/pi/slkscr.ttf', 24)
 
-
 print("""
 	Pi-Hole Button Control Running....
 
 	Press Ctrl+C to Exit.
 	""")
 
-#Cycle and clear LEDs on startup (visual indication the script is running)
-buttonshim.set_pixel(255,0,0)
+# Cycle and clear LEDs on startup (visual indication the script is running)
+buttonshim.set_pixel(255, 0, 0)
 time.sleep(0.3)
-buttonshim.set_pixel(0,255,0)
+buttonshim.set_pixel(0, 255, 0)
 time.sleep(0.3)
-buttonshim.set_pixel(0,0,255)
+buttonshim.set_pixel(0, 0, 255)
 time.sleep(0.3)
-buttonshim.set_pixel(0,0,0)
+buttonshim.set_pixel(0, 0, 0)
 pressId = 0
 
 while True:
 
-	def getAndPrintStats():
-		draw.rectangle((0, 0, width, height), outline=0, fill=0)
+    def getAndPrintStats():
+        draw.rectangle((0, 0, width, height), outline=0, fill=0)
 
-		# Shell scripts for system monitoring from here :
-		# https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
-		cmd = "hostname -I | cut -d\' \' -f1 | tr -d \'\\n\'"
-		IP = subprocess.check_output(cmd, shell=True).decode("utf-8")
-		cmd = "hostname | tr -d \'\\n\'"
-		HOST = subprocess.check_output(cmd, shell=True).decode("utf-8")
-		cmd = "top -bn1 | grep load | awk " \
-			  "'{printf \"CPU Load: %.2f\", $(NF-2)}'"
-		CPU = subprocess.check_output(cmd, shell=True).decode("utf-8")
-		cmd = "free -m | awk 'NR==2{printf " \
-			  "\"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
-		MemUsage = subprocess.check_output(cmd, shell=True).decode("utf-8")
-		cmd = "df -h | awk '$NF==\"/\"{printf " \
-			  "\"Disk: %d/%dGB %s\", $3,$2,$5}'"
-		Disk = subprocess.check_output(cmd, shell=True).decode("utf-8")
+        # Shell scripts for system monitoring from here :
+        # https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
+        cmd = "hostname -I | cut -d\' \' -f1 | tr -d \'\\n\'"
+        IP = subprocess.check_output(cmd, shell=True).decode("utf-8")
+        cmd = "hostname | tr -d \'\\n\'"
+        HOST = subprocess.check_output(cmd, shell=True).decode("utf-8")
+        cmd = "top -bn1 | grep load | awk " \
+              "'{printf \"CPU Load: %.2f\", $(NF-2)}'"
+        CPU = subprocess.check_output(cmd, shell=True).decode("utf-8")
+        cmd = "free -m | awk 'NR==2{printf " \
+              "\"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
+        MemUsage = subprocess.check_output(cmd, shell=True).decode("utf-8")
+        cmd = "df -h | awk '$NF==\"/\"{printf " \
+              "\"Disk: %d/%dGB %s\", $3,$2,$5}'"
+        Disk = subprocess.check_output(cmd, shell=True).decode("utf-8")
 
-		# Pi Hole data!
-		try:
-			r = requests.get(api_url)
-			data = json.loads(r.text)
-			DNSQUERIES = data['dns_queries_today']
-			ADSBLOCKED = data['ads_blocked_today']
-			CLIENTS = data['unique_clients']
-		except KeyError:
-			time.sleep(1)
+        # Pi Hole data!
+        try:
+            r = requests.get(api_url)
+            data = json.loads(r.text)
+            DNSQUERIES = data['dns_queries_today']
+            ADSBLOCKED = data['ads_blocked_today']
+            CLIENTS = data['unique_clients']
+        except KeyError:
+            time.sleep(1)
 
-		draw.text((x, top), "IP: " + str(IP) +
-				  "( " + HOST + ")", font=font, fill=255)
-		draw.text((x, top + 8), "Ads Blocked: " +
-				  str(ADSBLOCKED), font=font, fill=255)
-		draw.text((x, top + 16), "Clients:     " +
-				  str(CLIENTS), font=font, fill=255)
-		draw.text((x, top + 24), "DNS Queries: " +
-				  str(DNSQUERIES), font=font, fill=255)
+        draw.text((x, top), "IP: " + str(IP) +
+                  "( " + HOST + ")", font=font, fill=255)
+        draw.text((x, top + 8), "Ads Blocked: " +
+                  str(ADSBLOCKED), font=font, fill=255)
+        draw.text((x, top + 16), "Clients:     " +
+                  str(CLIENTS), font=font, fill=255)
+        draw.text((x, top + 24), "DNS Queries: " +
+                  str(DNSQUERIES), font=font, fill=255)
 
-		# skip over original stats
-		# draw.text((x, top+8),     str(CPU), font=font, fill=255)
-		# draw.text((x, top+16),    str(MemUsage),  font=font, fill=255)
-		# draw.text((x, top+25),    str(Disk),  font=font, fill=255)
+        # skip over original stats
+        # draw.text((x, top+8),     str(CPU), font=font, fill=255)
+        # draw.text((x, top+16),    str(MemUsage),  font=font, fill=255)
+        # draw.text((x, top+25),    str(Disk),  font=font, fill=255)
 
-		# Display image.
-		disp.image(image)
-		disp.show()
-		time.sleep(10)
-		disp.fill(0)
-		disp.show()
-
-	def DisablePiholeTimer(numSecs):
-		global pressId
-		loopId = pressId
-		for i in range(0,numSecs):
-			draw.rectangle((0, 0, width, height), outline=0, fill=0)
-			disp.fill(0)
-			disp.show()
-			if ( loopId != pressId):
-				print ("Ending loop with ID: " + str(loopId))
-				return
-			print ("Pi-Hole disabled for " + str(numSecs-i))
-			draw.text((x, top), "Pi-Hole disabled for " + str(numSecs-i), font=font2, fill=255)
-			disp.image(image)
-			disp.show()
-			buttonshim.set_pixel(255,255,0)
-			time.sleep(0.5)
-			buttonshim.set_pixel(255,150,0)
-			time.sleep(0.5)
-		buttonshim.set_pixel(0,0,0)
-		disp.fill(0)
-		disp.show()
-		print ("Pi-Hole reenabled")
-
-	def SuspendPihole():
-		global pressId
-		loopId = pressId
-		print ("Pi-Hole suspended")
-		while (loopId == pressId):
-			buttonshim.set_pixel(255,0,0)
-			time.sleep(0.5)
-			buttonshim.set_pixel(0,0,0)
-			time.sleep(0.5)
-
-	def EnablePihole():
-		global pressId
-		loopId = pressId
-		print ("Pi-Hole enabled")
-		for i in range(0,2):
-			buttonshim.set_pixel(0,255,0)
-			time.sleep(0.3)
-			buttonshim.set_pixel(0,0,0)
-			time.sleep(0.3)
+        # Display image.
+        disp.image(image)
+        disp.show()
+        time.sleep(10)
+        disp.fill(0)
+        disp.show()
 
 
-	@buttonshim.on_press(buttonshim.BUTTON_A)
-	def button_a(button, pressed):
-		print ("Disabling Pi-Hole for 3s")
-		global pressId
-		pressId += 1
-		subprocess.call(['pihole','disable','3s'])
-		DisablePiholeTimer(int(3))
-
-	@buttonshim.on_press(buttonshim.BUTTON_B)
-	def button_b(button, pressed):
-		print ("Disabling Pi-Hole for 1800s")
-		global pressId
-		pressId += 1
-		subprocess.call(['pihole','disable','1800s'])
-		DisablePiholeTimer(int(1800))
-
-	@buttonshim.on_press(buttonshim.BUTTON_C)
-	def button_c(button, pressed):
-		print ("getting stats...")
-		global pressId
-		pressId += 1
-		getAndPrintStats()
-
-	@buttonshim.on_press(buttonshim.BUTTON_D)
-	def button_d(button, pressed):
-		print ("Suspending Pi-Hole")
-		global pressId
-		pressId += 1
-		subprocess.call(['pihole','disable'])
-		SuspendPihole()
-
-	@buttonshim.on_press(buttonshim.BUTTON_E)
-	def button_e(button, pressed):
-		print ("Enabling Pi-Hole")
-		global pressId
-		pressId += 1
-		subprocess.call(['pihole','enable'])
-		EnablePihole()
+    def DisablePiholeTimer(numSecs):
+        global pressId
+        loopId = pressId
+        for i in range(0, numSecs):
+            draw.rectangle((0, 0, width, height), outline=0, fill=0)
+            # disp.fill(0)
+            # disp.show()
+            if (loopId != pressId):
+                print ("Ending loop with ID: " + str(loopId))
+                return
+            print ("Pi-Hole disabled for " + str(numSecs - i))
+            draw.text((x, top), "Pi-Hole disabled for:", font=font, fill=255)
+            draw.text((x, top + 8), str(numSecs - i), font=font2, fill=255)
+            disp.image(image)
+            disp.show()
+            buttonshim.set_pixel(255, 255, 0)
+            time.sleep(0.5)
+            buttonshim.set_pixel(255, 150, 0)
+            time.sleep(0.5)
+        buttonshim.set_pixel(0, 0, 0)
+        disp.fill(0)
+        disp.show()
+        draw.rectangle((0, 0, width, height), outline=0, fill=0)
+        draw.text((x, top + 8), "Enabled!", font=font2, fill=255)
+        disp.image(image)
+        disp.show()
+        time.sleep(1)
+        disp.fill(0)
+        disp.show()
+        print ("Pi-Hole reenabled")
 
 
+    def SuspendPihole():
+        global pressId
+        loopId = pressId
+        print ("Pi-Hole suspended")
+        while (loopId == pressId):
+            buttonshim.set_pixel(255, 0, 0)
+            time.sleep(0.5)
+            buttonshim.set_pixel(0, 0, 0)
+            time.sleep(0.5)
 
-	signal.pause()
+
+    def EnablePihole():
+        global pressId
+        loopId = pressId
+        print ("Pi-Hole enabled")
+        for i in range(0, 2):
+            buttonshim.set_pixel(0, 255, 0)
+            time.sleep(0.3)
+            buttonshim.set_pixel(0, 0, 0)
+            time.sleep(0.3)
+
+
+    @buttonshim.on_press(buttonshim.BUTTON_A)
+    def button_a(button, pressed):
+        print ("Disabling Pi-Hole for 3s")
+        global pressId
+        pressId += 1
+        subprocess.call(['pihole', 'disable', '3s'])
+        DisablePiholeTimer(int(3))
+
+
+    @buttonshim.on_press(buttonshim.BUTTON_B)
+    def button_b(button, pressed):
+        print ("Disabling Pi-Hole for 1800s")
+        global pressId
+        pressId += 1
+        subprocess.call(['pihole', 'disable', '1800s'])
+        DisablePiholeTimer(int(1800))
+
+
+    @buttonshim.on_press(buttonshim.BUTTON_C)
+    def button_c(button, pressed):
+        print ("getting stats...")
+        global pressId
+        pressId += 1
+        getAndPrintStats()
+
+
+    @buttonshim.on_press(buttonshim.BUTTON_D)
+    def button_d(button, pressed):
+        print ("Suspending Pi-Hole")
+        global pressId
+        pressId += 1
+        subprocess.call(['pihole', 'disable'])
+        SuspendPihole()
+
+
+    @buttonshim.on_press(buttonshim.BUTTON_E)
+    def button_e(button, pressed):
+        print ("Enabling Pi-Hole")
+        global pressId
+        pressId += 1
+        subprocess.call(['pihole', 'enable'])
+        EnablePihole()
+
+
+    signal.pause()
 

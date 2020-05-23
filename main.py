@@ -13,6 +13,7 @@ import adafruit_ssd1306
 
 from PIL import Image, ImageDraw, ImageFont
 
+# pi-hole api
 api_url = 'http://localhost/admin/api.php'
 
 # Create the I2C interface.

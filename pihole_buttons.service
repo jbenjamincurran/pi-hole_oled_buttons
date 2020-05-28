@@ -1,0 +1,11 @@
+[Unit]
+Description=PiHole Service
+After=multi-user.target
+
+[Service]
+Restart=always
+Type=idle
+ExecStart=/usr/bin/sudo /usr/bin/python3 /home/pi/pi-hole_old_buttons/main.py
+
+[Install]
+WantedBy=multi-user.target
